@@ -43,6 +43,7 @@ target_compile_definitions(mysqlwrapper PRIVATE
 
 # 安装规则
 install(TARGETS mysqlwrapper
+        EXPORT MySQLWrapperTargets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
@@ -69,12 +70,13 @@ target_link_libraries(mysqlwrapper_static PUBLIC
 )
 
 install(TARGETS mysqlwrapper_static
+        EXPORT MySQLWrapperTargets
         ARCHIVE DESTINATION lib
 )
 
 # 创建pkg-config文件
 configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/mysqlwrapper.pc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/mysqlwrapper.pc.in"
         "${CMAKE_CURRENT_BINARY_DIR}/mysqlwrapper.pc"
         @ONLY
 )
@@ -106,3 +108,34 @@ message(STATUS "MySQL Include Dirs: ${MYSQL_INCLUDE_DIRS}")
 message(STATUS "MySQL Libraries: ${MYSQL_LIBRARIES}")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Install Prefix: ${CMAKE_INSTALL_PREFIX}")
+
+# 生成和安装 CMake 配置文件
+include(CMakePackageConfigHelpers)
+
+# 生成版本文件
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/MySQLWrapperConfigVersion.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY AnyNewerVersion
+)
+
+# 配置文件
+configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/MySQLWrapperConfig.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/MySQLWrapperConfig.cmake"
+        INSTALL_DESTINATION lib/cmake/MySQLWrapper
+)
+
+# 导出目标
+install(EXPORT MySQLWrapperTargets
+        FILE MySQLWrapperTargets.cmake
+        NAMESPACE MySQLWrapper::
+        DESTINATION lib/cmake/MySQLWrapper
+)
+
+# 安装配置文件
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/MySQLWrapperConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/MySQLWrapperConfigVersion.cmake"
+        DESTINATION lib/cmake/MySQLWrapper
+)
