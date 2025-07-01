@@ -930,12 +930,12 @@ Database readDb({.user = "read_user", ...});      // Only SELECT permissions
 Database writeDb({.user = "write_user", ...});    // Has INSERT/UPDATE/DELETE permissions
 ```
 
-## 常见问题
+## FAQ
 
-### Q1: 如何处理大结果集？
+### Q1: How to handle large result sets?
 
 ```cpp
-// 对于大结果集，考虑分页查询
+// For large result sets, consider pagination
 int pageSize = 1000;
 int offset = 0;
 
@@ -955,7 +955,7 @@ while (true) {
 }
 ```
 
-### Q2: 如何实现连接池监控？
+### Q2: How to implement connection pool monitoring?
 
 ```cpp
 class MonitoredDatabase : public Database {
@@ -984,12 +984,12 @@ private:
 };
 ```
 
-### Q3: 如何实现查询缓存？
+### Q3: How to implement query caching?
 
 ```cpp
 template<typename Key, typename Value>
 class LRUCache {
-    // LRU 缓存实现...
+    // LRU cache implementation...
 };
 
 class CachedDatabase {
@@ -1009,44 +1009,44 @@ public:
     
     template<typename... Args>
     QueryResult query(const std::string& sql, Args&&... args) {
-        // 参数化查询不缓存，避免缓存爆炸
+        // Don't cache parameterized queries to avoid cache explosion
         return db_.query(sql, std::forward<Args>(args)...);
     }
 };
 ```
 
-### Q4: 如何实现读写分离？
+### Q4: How to implement read-write splitting?
 
 ```cpp
 class ReadWriteSplitDatabase {
-    Database master_;                    // 主库（写）
-    std::vector<Database> slaves_;       // 从库（读）
-    std::atomic<size_t> slaveIndex_{0};  // 轮询索引
+    Database master_;                    // Master (write)
+    std::vector<Database> slaves_;       // Slaves (read)
+    std::atomic<size_t> slaveIndex_{0};  // Round-robin index
     
 public:
     QueryResult query(const std::string& sql) {
-        // 读操作分发到从库
+        // Route read operations to slaves
         size_t index = slaveIndex_.fetch_add(1) % slaves_.size();
         return slaves_[index].query(sql);
     }
     
     uint64_t execute(const std::string& sql) {
-        // 写操作发送到主库
+        // Route write operations to master
         return master_.execute(sql);
     }
     
     auto beginTransaction() {
-        // 事务使用主库
+        // Transactions use master
         return master_.beginTransaction();
     }
 };
 ```
 
-### Q5: 如何处理连接断开？
+### Q5: How to handle connection disconnects?
 
 ```cpp
-// MySQLWrapper 已内置自动重连机制
-// 但您可以自定义重试策略
+// MySQLWrapper has built-in auto-reconnect mechanism
+// But you can customize retry strategies
 
 template<typename Func>
 auto retryOnFailure(Func&& func, int maxRetries = 3) {
@@ -1063,36 +1063,36 @@ auto retryOnFailure(Func&& func, int maxRetries = 3) {
     }
 }
 
-// 使用
+// Usage
 auto result = retryOnFailure([&db]() {
     return db.query("SELECT * FROM users");
 });
 ```
 
-### 开发环境设置
+### Development Environment Setup
 
 ```bash
-# 克隆仓库
+# Clone repository
 git clone https://github.com/Derrity/mysql-wrapper.git
 cd mysql-wrapper
 
-# 安装开发依赖
+# Install development dependencies
 sudo apt install -y clang-format clang-tidy cppcheck valgrind
 
-# 构建和测试
+# Build and test
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON
 make -j$(nproc)
 make test
 
-# 运行代码检查
-make format  # 格式化代码
-make tidy    # 运行 clang-tidy
-make check   # 运行 cppcheck
+# Run code checks
+make format  # Format code
+make tidy    # Run clang-tidy
+make check   # Run cppcheck
 ```
 
-## 致谢
+## Acknowledgements
 
-- MySQL 开发团队
-- C++ 社区
-- 所有贡献者
+- MySQL Development Team
+- C++ Community
+- All Contributors
