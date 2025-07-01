@@ -1,56 +1,56 @@
-# MySQLWrapper - 现代化 C++ MySQL 数据库操作库
+# MySQLWrapper - Modern C++ MySQL Database Operation Library
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
 [![MySQL](https://img.shields.io/badge/MySQL-5.7%2B-orange.svg)](https://www.mysql.com/)
 
-MySQLWrapper 是一个现代化的 C++ MySQL 数据库操作库，提供简洁、安全、高性能的数据库访问接口。相比传统的 MySQL Connector/C++，它提供了更符合现代 C++ 标准的 API 设计，内置连接池、自动防 SQL 注入、RAII 资源管理等特性。
+MySQLWrapper is a modern C++ MySQL database operation library that provides a simple, secure, and high-performance database access interface. Compared to traditional MySQL Connector/C++, it offers API design that better conforms to modern C++ standards, with built-in connection pooling, automatic SQL injection prevention, RAII resource management, and other features.
 
-## 目录
+## Table of Contents
 
-- [特性亮点](#特性亮点)
-- [快速开始](#快速开始)
-- [安装指南](#安装指南)
-- [API 文档](#api-文档)
-- [使用示例](#使用示例)
-- [与 MySQL Connector/C++ 对比](#与-mysql-connectorc-对比)
-- [性能测试](#性能测试)
-- [最佳实践](#最佳实践)
-- [常见问题](#常见问题)
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+- [Installation Guide](#installation-guide)
+- [API Documentation](#api-documentation)
+- [Usage Examples](#usage-examples)
+- [Comparison with MySQL Connector/C++](#comparison-with-mysql-connectorc)
+- [Performance Testing](#performance-testing)
+- [Best Practices](#best-practices)
+- [FAQ](#faq)
 
-## 特性亮点
+## Key Features
 
-### 🚀 核心特性
+### 🚀 Core Features
 
-- **连接池管理**：内置高效的连接池，自动管理连接生命周期
-- **线程安全**：所有操作都是线程安全的，支持多线程并发访问
-- **自动防 SQL 注入**：默认使用预处理语句，自动转义参数
-- **RAII 资源管理**：自动管理资源生命周期，无需手动释放
-- **类型安全**：使用 `std::variant` 确保类型安全
-- **异步操作**：支持异步查询，充分利用多核 CPU
-- **事务支持**：RAII 风格的事务管理，异常自动回滚
-- **批量操作**：高效的批量插入和更新操作
-- **零拷贝优化**：减少数据拷贝，提升性能
+- **Connection Pool Management**: Built-in efficient connection pool with automatic connection lifecycle management
+- **Thread Safety**: All operations are thread-safe, supporting multi-threaded concurrent access
+- **Automatic SQL Injection Prevention**: Uses prepared statements by default with automatic parameter escaping
+- **RAII Resource Management**: Automatic resource lifecycle management without manual cleanup
+- **Type Safety**: Uses `std::variant` to ensure type safety
+- **Asynchronous Operations**: Supports asynchronous queries to fully utilize multi-core CPUs
+- **Transaction Support**: RAII-style transaction management with automatic rollback on exceptions
+- **Batch Operations**: Efficient batch insert and update operations
+- **Zero-Copy Optimization**: Reduces data copying to improve performance
 
-### 🛡️ 安全特性
+### 🛡️ Security Features
 
-- 所有查询默认参数化，防止 SQL 注入
-- 连接自动重连机制
-- 事务异常自动回滚
-- 连接超时保护
-- 线程安全的错误处理
+- All queries are parameterized by default to prevent SQL injection
+- Automatic connection reconnection mechanism
+- Automatic transaction rollback on exceptions
+- Connection timeout protection
+- Thread-safe error handling
 
-### 💡 易用性
+### 💡 Usability
 
-- 简洁直观的 API 设计
-- 链式调用支持
-- 自动类型推导
-- 丰富的错误信息
-- 完善的文档和示例
+- Clean and intuitive API design
+- Method chaining support
+- Automatic type deduction
+- Rich error information
+- Comprehensive documentation and examples
 
-## 快速开始
+## Quick Start
 
-### 最小示例
+### Minimal Example
 
 ```cpp
 #include "MySQLWrapper.h"
@@ -59,7 +59,7 @@ MySQLWrapper 是一个现代化的 C++ MySQL 数据库操作库，提供简洁�
 using namespace MySQLWrapper;
 
 int main() {
-    // 1. 创建数据库连接
+    // 1. Create database connection
     Database db({
         .host = "localhost",
         .user = "root",
@@ -67,10 +67,10 @@ int main() {
         .database = "test"
     });
     
-    // 2. 执行查询
+    // 2. Execute query
     auto result = db.query("SELECT * FROM users WHERE age > ?", 18);
     
-    // 3. 处理结果
+    // 3. Process results
     for (const auto& row : result.rows()) {
         std::cout << "Name: " << get<std::string>(row.at("name")) 
                   << ", Age: " << get<int>(row.at("age")) << std::endl;
@@ -80,10 +80,10 @@ int main() {
 }
 ```
 
-### 对比 MySQL Connector/C++ 的写法
+### Comparison with MySQL Connector/C++ Code
 
 ```cpp
-// MySQL Connector/C++ 的传统写法
+// Traditional MySQL Connector/C++ approach
 #include <mysql_driver.h>
 #include <mysql_connection.h>
 #include <cppconn/prepared_statement.h>
@@ -96,30 +96,30 @@ int main() {
     sql::ResultSet *res = nullptr;
     
     try {
-        // 1. 获取驱动并创建连接
+        // 1. Get driver and create connection
         driver = sql::mysql::get_mysql_driver_instance();
         con = driver->connect("tcp://127.0.0.1:3306", "root", "password");
         con->setSchema("test");
         
-        // 2. 准备并执行查询
+        // 2. Prepare and execute query
         pstmt = con->prepareStatement("SELECT * FROM users WHERE age > ?");
         pstmt->setInt(1, 18);
         res = pstmt->executeQuery();
         
-        // 3. 处理结果
+        // 3. Process results
         while (res->next()) {
             std::cout << "Name: " << res->getString("name") 
                       << ", Age: " << res->getInt("age") << std::endl;
         }
         
-        // 4. 手动清理资源
+        // 4. Manual resource cleanup
         delete res;
         delete pstmt;
         delete con;
         
     } catch (sql::SQLException &e) {
         std::cerr << "Error: " << e.what() << std::endl;
-        // 异常情况下也要清理资源
+        // Clean up resources even in exception cases
         if (res) delete res;
         if (pstmt) delete pstmt;
         if (con) delete con;
@@ -129,21 +129,21 @@ int main() {
 }
 ```
 
-**代码量对比**：MySQLWrapper 只需要 15 行，而 MySQL Connector/C++ 需要 35+ 行。
+**Code Comparison**: MySQLWrapper requires only 15 lines, while MySQL Connector/C++ needs 35+ lines.
 
-## 安装指南
+## Installation Guide
 
-### 系统要求
+### System Requirements
 
-- C++17 或更高版本
+- C++17 or higher
 - CMake 3.10+
-- MySQL 5.7+ 或 MariaDB 10.2+
-- Linux、macOS 或 Windows
+- MySQL 5.7+ or MariaDB 10.2+
+- Linux, macOS, or Windows
 
-### 在 Debian/Ubuntu 上安装
+### Installation on Debian/Ubuntu
 
 ```bash
-# 1. 安装依赖
+# 1. Install dependencies
 sudo apt update
 sudo apt install -y \
     libmysqlclient-dev \
@@ -153,11 +153,11 @@ sudo apt install -y \
     libssl-dev \
     git
 
-# 2. 克隆仓库
+# 2. Clone repository
 git clone https://github.com/Derrity/mysql-wrapper.git
 cd mysql-wrapper
 
-# 3. 编译安装
+# 3. Build and install
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
@@ -165,10 +165,10 @@ sudo make install
 sudo ldconfig
 ```
 
-### 在 CentOS/RHEL/Fedora 上安装
+### Installation on CentOS/RHEL/Fedora
 
 ```bash
-# 1. 安装依赖
+# 1. Install dependencies
 sudo yum install -y \
     mysql-devel \
     gcc-c++ \
@@ -176,7 +176,7 @@ sudo yum install -y \
     openssl-devel \
     git
 
-# 2. 克隆并编译
+# 2. Clone and build
 git clone https://github.com/Derrity/mysql-wrapper.git
 cd mysql-wrapper
 mkdir build && cd build
@@ -186,13 +186,13 @@ sudo make install
 sudo ldconfig
 ```
 
-### 在 macOS 上安装
+### Installation on macOS
 
 ```bash
-# 1. 安装依赖
+# 1. Install dependencies
 brew install mysql cmake pkg-config
 
-# 2. 克隆并编译
+# 2. Clone and build
 git clone https://github.com/Derrity/mysql-wrapper.git
 cd mysql-wrapper
 mkdir build && cd build
@@ -201,138 +201,138 @@ make -j$(sysctl -n hw.ncpu)
 sudo make install
 ```
 
-### 在项目中使用
+### Using in Your Project
 
-#### 方法 1：使用 CMake
+#### Method 1: Using CMake
 
 ```cmake
 find_package(MySQLWrapper REQUIRED)
 target_link_libraries(your_target PRIVATE MySQLWrapper::mysqlwrapper)
 ```
 
-#### 方法 2：手动链接
+#### Method 2: Manual Linking
 
 ```bash
 g++ -std=c++17 your_code.cpp -lmysqlwrapper -lmysqlclient -lpthread
 ```
 
-## API 文档
+## API Documentation
 
-### 连接配置
+### Connection Configuration
 
 ```cpp
 struct ConnectionConfig {
-    std::string host = "localhost";      // 数据库主机
-    int port = 3306;                     // 端口号
-    std::string user;                    // 用户名
-    std::string password;                // 密码
-    std::string database;                // 数据库名
-    std::string charset = "utf8mb4";     // 字符集
-    int poolSize = 10;                   // 连接池初始大小
-    int maxPoolSize = 50;                // 连接池最大大小
-    int connectionTimeout = 10;          // 连接超时（秒）
-    bool autoReconnect = true;           // 自动重连
+    std::string host = "localhost";      // Database host
+    int port = 3306;                     // Port number
+    std::string user;                    // Username
+    std::string password;                // Password
+    std::string database;                // Database name
+    std::string charset = "utf8mb4";     // Character set
+    int poolSize = 10;                   // Initial connection pool size
+    int maxPoolSize = 50;                // Maximum connection pool size
+    int connectionTimeout = 10;          // Connection timeout (seconds)
+    bool autoReconnect = true;           // Auto reconnect
 };
 ```
 
-### Database 类
+### Database Class
 
 ```cpp
 class Database {
 public:
-    // 构造函数
+    // Constructor
     explicit Database(const ConnectionConfig& config);
     
-    // 查询操作
+    // Query operations
     QueryResult query(const std::string& sql);
     
-    // 参数化查询（自动防 SQL 注入）
+    // Parameterized query (automatic SQL injection prevention)
     template<typename... Args>
     QueryResult query(const std::string& sql, Args&&... args);
     
-    // 异步查询
+    // Asynchronous query
     std::future<QueryResult> queryAsync(const std::string& sql);
     
-    // 执行语句（INSERT/UPDATE/DELETE）
+    // Execute statement (INSERT/UPDATE/DELETE)
     uint64_t execute(const std::string& sql);
     
-    // 参数化执行
+    // Parameterized execution
     template<typename... Args>
     uint64_t execute(const std::string& sql, Args&&... args);
     
-    // 开始事务
+    // Begin transaction
     std::unique_ptr<Transaction> beginTransaction();
     
-    // 批量插入
+    // Batch insert
     template<typename Container>
     uint64_t batchInsert(const std::string& table, 
                          const std::vector<std::string>& columns,
                          const Container& data);
     
-    // 转义字符串
+    // Escape string
     std::string escape(const std::string& str);
 };
 ```
 
-### QueryResult 类
+### QueryResult Class
 
 ```cpp
 class QueryResult {
 public:
-    // 获取所有行
+    // Get all rows
     const ResultSet& rows() const;
     
-    // 获取影响的行数
+    // Get affected rows count
     uint64_t affectedRows() const;
     
-    // 获取最后插入的 ID
+    // Get last insert ID
     uint64_t lastInsertId() const;
     
-    // 获取结果集大小
+    // Get result set size
     size_t size() const;
     
-    // 检查是否为空
+    // Check if empty
     bool empty() const;
     
-    // 下标访问
+    // Index access
     const Row& operator[](size_t index) const;
 };
 ```
 
-### Transaction 类
+### Transaction Class
 
 ```cpp
 class Transaction {
 public:
-    // 查询操作
+    // Query operations
     QueryResult query(const std::string& sql);
     
-    // 执行操作
+    // Execute operations
     uint64_t execute(const std::string& sql);
     
-    // 参数化操作
+    // Parameterized operations
     template<typename... Args>
     QueryResult query(const std::string& sql, Args&&... args);
     
     template<typename... Args>
     uint64_t execute(const std::string& sql, Args&&... args);
     
-    // 提交事务
+    // Commit transaction
     void commit();
     
-    // 回滚事务
+    // Rollback transaction
     void rollback();
 };
 ```
 
-### 工具函数
+### Utility Functions
 
 ```cpp
-// 从 Value 中获取指定类型的值
+// Get value of specified type from Value
 template<typename T>
 T get(const Value& value);
 
-// 安全获取值（返回 optional）
+// Safe get value (returns optional)
 template<typename T>
 std::optional<T> getOpt(const Value& value);
 ```
