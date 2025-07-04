@@ -146,7 +146,7 @@ int main() {
 # 1. Install dependencies
 sudo apt update
 sudo apt install -y \
-    libmysqlclient-dev \
+    default-libmysqlclient-dev \
     build-essential \
     cmake \
     pkg-config \
