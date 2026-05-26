@@ -218,8 +218,7 @@ if (!result) {
 
 ## Notes
 
-- Version 2 is intentionally API/ABI breaking.
-- The legacy `MySQLWrapper.h` header remains as a compatibility forwarding
-  header and aliases `MySQLWrapper` to `mysqlw`.
+- Version 2 is intentionally API/ABI breaking and only supports the modern
+  `mysqlw` API.
 - Integration tests that require a live MySQL server are opt-in and can be run
   with Podman using the commands above.

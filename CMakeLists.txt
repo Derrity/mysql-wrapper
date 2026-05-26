@@ -70,8 +70,6 @@ install(TARGETS mysqlwrapper
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-install(FILES MySQLWrapper.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/mysqlwrapper.pc.in"
     "${CMAKE_CURRENT_BINARY_DIR}/mysqlwrapper.pc"
