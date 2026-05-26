@@ -1,82 +1,77 @@
-cmake_minimum_required(VERSION 3.10)
-project(MySQLWrapper VERSION 1.0.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.28)
 
-# C++17标准
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+project(MySQLWrapper VERSION 2.0.0 LANGUAGES CXX)
+
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+option(MYSQLWRAPPER_BUILD_MODULES "Build C++23 module interface" OFF)
+option(MYSQLWRAPPER_BUILD_TESTS "Build tests" ON)
+option(MYSQLWRAPPER_BUILD_EXAMPLES "Build examples" OFF)
+
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# 编译选项
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-# 查找MySQL
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(MYSQL REQUIRED mysqlclient)
-
-# 查找线程库
+pkg_check_modules(MYSQLCLIENT REQUIRED IMPORTED_TARGET mysqlclient)
 find_package(Threads REQUIRED)
 
-# 创建库
-add_library(mysqlwrapper SHARED
-    MySQLWrapper.cpp
-    MySQLWrapper.h
+add_library(mysqlwrapper)
+add_library(MySQLWrapper::mysqlwrapper ALIAS mysqlwrapper)
+
+target_sources(mysqlwrapper
+    PRIVATE
+        src/mysql_wrapper.cpp
 )
 
-# 包含目录
-target_include_directories(mysqlwrapper PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
-    ${MYSQL_INCLUDE_DIRS}
+if(MYSQLWRAPPER_BUILD_MODULES)
+    target_sources(mysqlwrapper
+        PUBLIC
+            FILE_SET cxx_modules TYPE CXX_MODULES
+            BASE_DIRS modules
+            FILES modules/mysql.wrapper.cppm
+    )
+endif()
+
+target_sources(mysqlwrapper
+    PUBLIC
+        FILE_SET public_headers TYPE HEADERS
+        BASE_DIRS include
+        FILES include/mysqlwrapper/mysql_wrapper.hpp
 )
 
-# 链接库
-target_link_libraries(mysqlwrapper PUBLIC
-    ${MYSQL_LIBRARIES}
-    Threads::Threads
+target_compile_features(mysqlwrapper PUBLIC cxx_std_23)
+
+target_include_directories(mysqlwrapper
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-# 编译定义
-target_compile_definitions(mysqlwrapper PRIVATE
-    MYSQLWRAPPER_EXPORTS
+target_link_libraries(mysqlwrapper
+    PUBLIC
+        Threads::Threads
+    PRIVATE
+        PkgConfig::MYSQLCLIENT
 )
 
-# 安装规则
+target_compile_options(mysqlwrapper PRIVATE
+    $<$<CXX_COMPILER_ID:AppleClang,Clang,GNU>:-Wall -Wextra -Wpedantic>
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+)
+
 install(TARGETS mysqlwrapper
     EXPORT MySQLWrapperTargets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
+    FILE_SET public_headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILE_SET cxx_modules DESTINATION ${CMAKE_INSTALL_LIBDIR}/cxx/modules/mysqlwrapper
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-install(FILES MySQLWrapper.h
-    DESTINATION include
-)
+install(FILES MySQLWrapper.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-# 创建静态库版本
-add_library(mysqlwrapper_static STATIC
-    MySQLWrapper.cpp
-    MySQLWrapper.h
-)
-
-target_include_directories(mysqlwrapper_static PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
-    ${MYSQL_INCLUDE_DIRS}
-)
-
-target_link_libraries(mysqlwrapper_static PUBLIC
-    ${MYSQL_LIBRARIES}
-    Threads::Threads
-)
-
-install(TARGETS mysqlwrapper_static
-    EXPORT MySQLWrapperTargets
-    ARCHIVE DESTINATION lib
-)
-
-# 创建pkg-config文件
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/mysqlwrapper.pc.in"
     "${CMAKE_CURRENT_BINARY_DIR}/mysqlwrapper.pc"
@@ -84,60 +79,48 @@ configure_file(
 )
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/mysqlwrapper.pc"
-    DESTINATION lib/pkgconfig
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 
-# 示例程序（可选）
-option(BUILD_EXAMPLES "Build example programs" OFF)
-
-if(BUILD_EXAMPLES)
-    add_executable(example example.cpp)
-    target_link_libraries(example mysqlwrapper)
-endif()
-
-# 测试（可选）
-option(BUILD_TESTS "Build test programs" OFF)
-
-if(BUILD_TESTS)
-    enable_testing()
-    add_executable(test_mysqlwrapper test_mysqlwrapper.cpp)
-    target_link_libraries(test_mysqlwrapper mysqlwrapper)
-    add_test(NAME MySQLWrapperTest COMMAND test_mysqlwrapper)
-endif()
-
-# 打印配置信息
-message(STATUS "MySQL Include Dirs: ${MYSQL_INCLUDE_DIRS}")
-message(STATUS "MySQL Libraries: ${MYSQL_LIBRARIES}")
-message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Install Prefix: ${CMAKE_INSTALL_PREFIX}")
-
-# 生成和安装 CMake 配置文件
-include(CMakePackageConfigHelpers)
-
-# 生成版本文件
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/MySQLWrapperConfigVersion.cmake"
     VERSION ${PROJECT_VERSION}
-    COMPATIBILITY AnyNewerVersion
+    COMPATIBILITY SameMajorVersion
 )
 
-# 配置文件
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/MySQLWrapperConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/MySQLWrapperConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/MySQLWrapper
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/MySQLWrapper
 )
 
-# 导出目标
 install(EXPORT MySQLWrapperTargets
     FILE MySQLWrapperTargets.cmake
     NAMESPACE MySQLWrapper::
-    DESTINATION lib/cmake/MySQLWrapper
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/MySQLWrapper
 )
 
-# 安装配置文件
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/MySQLWrapperConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/MySQLWrapperConfigVersion.cmake"
-    DESTINATION lib/cmake/MySQLWrapper
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/MySQLWrapper
 )
+
+if(MYSQLWRAPPER_BUILD_TESTS)
+    enable_testing()
+    add_executable(mysqlwrapper_tests tests/mysqlwrapper_tests.cpp)
+    target_compile_features(mysqlwrapper_tests PRIVATE cxx_std_23)
+    target_link_libraries(mysqlwrapper_tests PRIVATE mysqlwrapper)
+    add_test(NAME mysqlwrapper_tests COMMAND mysqlwrapper_tests)
+
+    add_executable(mysqlwrapper_integration_tests tests/mysqlwrapper_integration_tests.cpp)
+    target_compile_features(mysqlwrapper_integration_tests PRIVATE cxx_std_23)
+    target_link_libraries(mysqlwrapper_integration_tests PRIVATE mysqlwrapper)
+    add_test(NAME mysqlwrapper_integration_tests COMMAND mysqlwrapper_integration_tests)
+endif()
+
+if(MYSQLWRAPPER_BUILD_EXAMPLES)
+    add_executable(mysqlwrapper_example examples/basic.cpp)
+    target_compile_features(mysqlwrapper_example PRIVATE cxx_std_23)
+    target_link_libraries(mysqlwrapper_example PRIVATE mysqlwrapper)
+endif()

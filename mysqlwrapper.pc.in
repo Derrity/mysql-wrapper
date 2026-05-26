@@ -1,11 +1,11 @@
 prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=${prefix}
-libdir=${exec_prefix}/lib
-includedir=${prefix}/include
+libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
 
 Name: MySQLWrapper
-Description: A modern C++ MySQL wrapper library
+Description: C++23 MySQL wrapper with modules, RAII, expected errors, and pooled async execution
 Version: @PROJECT_VERSION@
+Requires: mysqlclient
 Libs: -L${libdir} -lmysqlwrapper
 Cflags: -I${includedir}
-Requires: mysqlclient
